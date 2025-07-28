@@ -23,19 +23,24 @@ func main() {
 		fmt.Println("failed to bind to port 4221")
 		os.Exit(1)
 	}
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("error accepting connection: ", err.Error())
+			os.Exit(1)
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("error accepting connection: ", err.Error())
-		os.Exit(1)
+		}
+		go Handlereq(conn) //handle multiple threads automatically (concurrently)
 	}
+}
 
-	// msg := []byte("HTTP/1.1 200 OK\r\n\r\n")
-	// conn.Write(msg)
+// msg := []byte("HTTP/1.1 200 OK\r\n\r\n")
+// conn.Write(msg)
 
-	// conn.Close()
+// conn.Close()
 
-	//server will extract the URL path from an HTTP request, and respond with either a 200 or 404, depending on the path.
+// server will extract the URL path from an HTTP request, and respond with either a 200 or 404, depending on the path.
+func Handlereq(conn net.Conn) {
 	buff := make([]byte, 1024)
 	conn.Read(buff)
 
