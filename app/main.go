@@ -1,23 +1,24 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
 	"strings"
+	"unicode/utf8"
 )
 
-// ensures gofmt doesn't remove the "net" and "os" imports above (feel free to remove this!)
+
 var _ = net.Listen
 var _ = os.Exit
 
 const CRLF = "\r\n"
 
 func main() {
-	// you can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("logs from your program will appear here!")
 
-	//
+	
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("failed to bind to port 4221")
@@ -41,6 +42,7 @@ func main() {
 
 // server will extract the URL path from an HTTP request, and respond with either a 200 or 404, depending on the path.
 func Handlereq(conn net.Conn) {
+	tempDirectory := "temp";
 	buff := make([]byte, 1024)
 	conn.Read(buff)
 
@@ -49,6 +51,14 @@ func Handlereq(conn net.Conn) {
 	lineparts := strings.Split(parts[0], " ")
 
 	header := make(map[string]string)
+	type HTTPRequest struct {
+		Headers map[string]string
+		Url     string
+	}
+	request := HTTPRequest{
+		Url:     lineparts[1],
+		Headers: header,
+	}
 	for i := 1; i < len(parts); i++ {
 		lines := parts[i]
 		if lines == " " {
@@ -80,6 +90,28 @@ func Handlereq(conn net.Conn) {
 		content := header["User-Agent"]
 		contentlen := len(content)
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", contentlen, content)))
+
+	}else if strings.HasPrefix(request.Url,"/files"){
+		fileparts := strings.Split(request.Url,"/")
+		
+		filename := fileparts[2]
+		filepath := fmt.Sprintf("%s/%s", tempDirectory, filename)
+
+
+		if len(fileparts) > 3 {
+			conn.Write([]byte("http/1.1 404 Not Found\r\n\r\n"))
+			return
+		}
+
+		if _,err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+			conn.Write([]byte("http/1.1 404 Not Found\r\n\r\n"))
+			return
+		}
+		content,_ := os.ReadFile(filepath)
+		contentLength := utf8.RuneCountInString(string(content))
+		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", contentLength, content)))
+
+
 
 	} else {
 		conn.Write([]byte("http/1.1 404 not found\r\n\r\n"))
