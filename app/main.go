@@ -47,17 +47,24 @@ func Handlereq(conn net.Conn) {
 	conn.Read(buff)
 
 	parts := strings.Split(string(buff), CRLF)
-
+    len_of_parts := len(parts)
 	lineparts := strings.Split(parts[0], " ")
+	method := lineparts[0]
+	body_content := parts[len_of_parts-1]
+
 
 	header := make(map[string]string)
 	type HTTPRequest struct {
 		Headers map[string]string
 		Url     string
-	}
+		Method  string
+		Body	string
+ 	}
 	request := HTTPRequest{
 		Url:     lineparts[1],
 		Headers: header,
+		Method: method,
+		Body: body_content,
 	}
 	for i := 1; i < len(parts); i++ {
 		lines := parts[i]
@@ -110,8 +117,8 @@ func Handlereq(conn net.Conn) {
 		content,_ := os.ReadFile(filepath)
 		contentLength := utf8.RuneCountInString(string(content))
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", contentLength, content)))
-
-
+	}else if  request.Method == "POST"{
+		
 
 	} else {
 		conn.Write([]byte("http/1.1 404 not found\r\n\r\n"))
