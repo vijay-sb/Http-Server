@@ -95,7 +95,7 @@ func Handlereq(conn net.Conn) {
 		contentlen := len(content)
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", contentlen, content)))
 
-	} else if strings.HasPrefix(request.Url, "/files") {
+	} else if request.Method == "GET" && strings.HasPrefix (request.Url, "/files") {
 		fileparts := strings.Split(request.Url, "/")
 
 		filename := fileparts[2]
@@ -113,7 +113,7 @@ func Handlereq(conn net.Conn) {
 		content, _ := os.ReadFile(filepath)
 		contentLength := utf8.RuneCountInString(string(content))
 		conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", contentLength, content)))
-	} else if request.Method == "POST" {
+	} else if request.Method == "POST" && strings.HasPrefix(request.Url, "/files/") {
 		fileparts := strings.Split(request.Url, "/")
 		filname := fileparts[2]
 		filepath := fmt.Sprintf("%s/%s", tempDirectory, filname)
@@ -133,6 +133,5 @@ func Handlereq(conn net.Conn) {
 		conn.Write([]byte("http/1.1 201 Created \r\n\\r\n"))
 	} else {
 		conn.Write([]byte("http/1.1 404 not found\r\n\r\n"))
-
 	}
 }
